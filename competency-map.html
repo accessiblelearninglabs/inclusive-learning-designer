@@ -102,6 +102,8 @@
   #title-block a { color: var(--focus); }
 
   #key { display: none; }
+  /* Embedded in a page that carries its own heading and text-version link */
+  .embedded #title-block { display: none; }
   .skip { position: absolute; left: -999px; top: 0; background: var(--text); color: #fff; padding: .5rem .8rem; z-index: 10; }
   .skip:focus { left: 0; }
 
@@ -157,6 +159,7 @@
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
 <script>
+try { if (window.self !== window.top) document.documentElement.classList.add('embedded'); } catch (e) { document.documentElement.classList.add('embedded'); }
 const nodes = [
  {
   "id": "c1",
@@ -642,6 +645,18 @@ function init() {
     .stop();
   for (let i = 0; i < 400; i++) { sim.tick(); separate(0.5); }
   for (let i = 0; i < 400 && separate(1); i++);
+  // centre the layout vertically in the free band between the title (if shown) and the legend
+  if (!narrow) {
+    const tb = document.getElementById('title-block'), lg = document.getElementById('legend');
+    const shown = getComputedStyle(tb).display !== 'none';
+    const top = shown ? tb.getBoundingClientRect().bottom - wr.top + 24 : 24;
+    const bottom = lg.getBoundingClientRect().top - wr.top - 16;
+    let y0 = Infinity, y1 = -Infinity;
+    nodes.forEach(n => { const b = box(n); y0 = Math.min(y0, b.y0); y1 = Math.max(y1, b.y1); });
+    const dy = (top + bottom) / 2 - (y0 + y1) / 2;
+    nodes.forEach(n => { n.y += dy; });
+    for (let i = 0; i < 200 && separate(1); i++);
+  }
 
   const ge = el('g', { class: 'edges', 'aria-hidden': 'true' }, svg);
   edgeEls = edges.map(e => {
