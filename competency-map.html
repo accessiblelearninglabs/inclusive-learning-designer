@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Core competencies | Andrea Robin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Asap:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --text: #303e44;
+    --accent: #43525a;
+    --muted: #576a73;
+    --ring: rgba(71,95,106,0.22);
+    --edge: rgba(71,95,106,0.18);
+    --edge-strong: rgba(71,95,106,0.38);
+    --focus: #25587f;
+    --font: 'Asap', sans-serif;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    background: var(--bg);
+    font-family: var(--font);
+    font-size: 100%;
+    color: var(--text);
+    overflow: hidden;
+  }
+
+  #canvas-wrap { width: 100%; height: 100vh; position: relative; }
+  svg { width: 100%; height: 100%; display: block; }
+
+  .zone { fill: none; stroke: var(--ring); stroke-width: 1; stroke-dasharray: 4 4; }
+  .zone-label, .cluster-label {
+    font-family: var(--font); font-size: 11px; font-weight: 500;
+    letter-spacing: 0.08em; text-transform: uppercase; fill: var(--muted);
+  }
+
+  .edge { stroke: var(--edge); stroke-width: 1.2; fill: none; transition: stroke 0.2s, stroke-width 0.2s, opacity 0.2s; }
+  .edge.strong { stroke-width: 2; stroke: var(--edge-strong); }
+  .edge.dimmed { opacity: 0.08; }
+  .edge.highlighted { stroke: var(--focus); stroke-width: 2.2; opacity: 1; }
+
+  .node-group { cursor: pointer; outline: none; }
+  .node-circle { transition: opacity 0.2s ease; }
+  .node-ring { fill: none; stroke: transparent; stroke-width: 3; }
+  .node-group:focus-visible .node-ring, .node-group.active .node-ring { stroke: var(--focus); }
+  .node-group.dimmed .node-circle { opacity: 0.2; }
+  .node-group.dimmed .node-label { opacity: 0.15; }
+
+  .node-label {
+    font-family: var(--font); font-size: 11.5px; font-weight: 500; fill: var(--text);
+    pointer-events: none; transition: opacity 0.2s;
+    stroke: var(--bg); stroke-width: 4px; stroke-linejoin: round; paint-order: stroke;
+  }
+  .node-num {
+    font-family: var(--font); font-size: 10px; font-weight: 600; fill: #ffffff;
+    pointer-events: none; dominant-baseline: central; text-anchor: middle;
+  }
+  .center-node circle { fill: var(--text); }
+  .center-label {
+    font-family: var(--font); font-size: 10px; font-weight: 500; fill: var(--muted);
+    text-anchor: middle; letter-spacing: 0.08em; text-transform: uppercase; pointer-events: none;
+  }
+
+  #tooltip {
+    position: absolute; background: var(--bg);
+    border: 1px solid rgba(71,95,106,0.2); border-radius: 10px;
+    padding: 14px 18px; max-width: 280px;
+    pointer-events: none; opacity: 0; transition: opacity 0.18s ease;
+    box-shadow: 0 4px 24px rgba(48,62,68,0.10);
+  }
+  #tooltip.visible { opacity: 1; }
+  #tooltip.pinned { pointer-events: auto; }
+  #tooltip .tt-cluster { font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 4px; color: var(--muted); }
+  #tooltip .tt-title { font-size: 14px; font-weight: 600; color: var(--text); margin-bottom: 6px; line-height: 1.3; outline: none; }
+  #tooltip .tt-desc { font-size: 12px; color: var(--accent); line-height: 1.55; }
+  #tooltip .tt-meta { font-size: 11px; color: var(--muted); margin-top: 6px; }
+  #tooltip .tt-links { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(71,95,106,0.12); font-size: 11px; color: var(--accent); }
+  #tooltip .tt-ev { list-style: none; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(71,95,106,0.12); font-size: 11.5px; }
+  #tooltip .tt-ev li + li { margin-top: 3px; }
+  #tooltip a { color: var(--focus); }
+  #tooltip a:focus-visible, a:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+  #legend { position: absolute; bottom: 28px; left: 32px; display: flex; flex-direction: column; gap: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 9px; font-size: 11.5px; font-weight: 500; color: var(--accent); }
+  .legend-dot { width: 11px; height: 11px; border-radius: 50%; flex-shrink: 0; }
+  .legend-key { font-size: 11px; color: var(--muted); max-width: 17rem; line-height: 1.45; }
+  .legend-key + .legend-key { margin-top: -4px; }
+  .legend-key:first-of-type { margin-top: 6px; }
+
+  #hint { position: absolute; bottom: 28px; right: 32px; font-size: 11px; color: var(--muted); font-style: italic; }
+
+  #title-block { position: absolute; top: 28px; left: 32px; }
+  #title-block h1 { font-size: 15px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+  #title-block p { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+  #title-block a { color: var(--focus); }
+
+  #key { display: none; }
+  .skip { position: absolute; left: -999px; top: 0; background: var(--text); color: #fff; padding: .5rem .8rem; z-index: 10; }
+  .skip:focus { left: 0; }
+
+  @media (max-width: 640px) {
+    html, body { overflow: auto; height: auto; }
+    #canvas-wrap { height: auto; display: flex; flex-direction: column; }
+    #title-block { order: 0; } #svg { order: 1; } #legend { order: 2; } #hint { order: 3; } #key { order: 4; }
+    #title-block { position: static; padding: 20px 16px 0; }
+    #legend { position: static; padding: 8px 16px 0; }
+    #hint { position: static; padding: 6px 16px 0; }
+    .node-label { display: none; }
+    #key { display: block; list-style: none; padding: 12px 16px 28px; font-size: 13px; }
+    #key li { display: flex; gap: 8px; align-items: baseline; padding: 3px 0; }
+    #key button { background: none; border: 0; font: inherit; color: var(--text); text-align: left; cursor: pointer; padding: 6px 0; min-height: 32px; }
+    #key .k-num { font-size: 11px; font-weight: 600; color: var(--muted); min-width: 1.4rem; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition-duration: .01ms !important; } }
+  @media (forced-colors: active) {
+    .node-circle { fill: CanvasText; forced-color-adjust: none; }
+    .node-num { fill: Canvas; forced-color-adjust: none; }
+    .node-label { fill: CanvasText; stroke: Canvas; }
+    .edge, .edge.strong, .edge.highlighted, .zone { stroke: CanvasText; }
+    .node-group:focus-visible .node-ring, .node-group.active .node-ring { stroke: Highlight; }
+    .legend-dot { background: CanvasText !important; forced-color-adjust: none; }
+  }
+</style>
+</head>
+<body>
+<a class="skip" href="competency-map-linear.html">Skip to the text version</a>
+<div id="canvas-wrap">
+  <svg id="svg" role="group" aria-label="Competency map: 16 circles in three groups"></svg>
+  <div id="tooltip" aria-hidden="true">
+    <div class="tt-cluster"></div>
+    <div class="tt-title" tabindex="-1"></div>
+    <div class="tt-desc"></div>
+    <div class="tt-meta"></div>
+    <ul class="tt-ev"></ul>
+    <div class="tt-links"></div>
+  </div>
+  <div id="title-block">
+    <h1>Core competencies</h1>
+    <p>Inclusive learning design · <a href="competency-map-linear.html">Text version</a></p>
+  </div>
+  <div id="legend">
+    <div class="legend-item"><div class="legend-dot" style="background:#25587f"></div>Learning Design</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#347cb1"></div>Access and Equity</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#617993"></div>Systems and Evidence</div>
+  </div>
+  <div id="hint">hover to explore · click to focus · drag to move</div>
+  <ol id="key"></ol>
+</div>
+<p id="announce" style="position:absolute;left:-9999px" aria-live="polite"></p>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+const nodes = [
+ {
+  "id": "c1",
+  "num": "1",
+  "label": "Diagnose before\ndesigning",
+  "name": "Diagnose before designing",
+  "cluster": "design",
+  "desc": "Identify the underlying problem before proposing a solution, including whether training is the right response.",
+  "status": "Published resource",
+  "ev": [
+   [
+    "Needs analysis for organizational transformation",
+    "https://www.andrearobin.com/needs-analysis-for-organizational-transformation"
+   ],
+   [
+    "Groundwork, the method",
+    "https://www.andrearobin.com/groundwork"
+   ]
+  ]
+ },
+ {
+  "id": "c2",
+  "num": "2",
+  "label": "Consult with\ninstructors",
+  "name": "Consult with instructors",
+  "cluster": "design",
+  "desc": "Move an instructor from a problem to a workable plan in a single consultation.",
+  "status": "Practised · resource not yet written",
+  "ev": []
+ },
+ {
+  "id": "c3",
+  "num": "3",
+  "label": "Align outcomes,\nassessment and\ncurriculum",
+  "name": "Align outcomes, assessment and curriculum",
+  "cluster": "design",
+  "desc": "Align outcomes, assessment and activities across a course or program.",
+  "status": "Published resource",
+  "ev": [
+   [
+    "Curriculum mapping design",
+    "https://www.andrearobin.com/curriculum-mapping-design"
+   ],
+   [
+    "Learning design resources",
+    "https://www.andrearobin.com/learning-design"
+   ],
+   [
+    "Case study: a learning evaluation framework for a national research institution",
+    "https://www.andrearobin.com/building-a-learning-evaluation-framework-for-a-national-research-institution"
+   ]
+  ]
+ },
+ {
+  "id": "c4",
+  "num": "4",
+  "label": "Design\nassessment for\nintegrity and AI",
+  "name": "Design assessment for integrity and AI",
+  "cluster": "design",
+  "desc": "Design assessment that remains valid when generative AI is available, with clear expectations for permitted use.",
+  "status": "Practised · resource not yet written",
+  "ev": []
+ },
+ {
+  "id": "c5",
+  "num": "5",
+  "label": "Design the\nlearning\nexperience",
+  "name": "Design the learning experience",
+  "cluster": "design",
+  "desc": "Design preparation, practice and reflection so adults learn through experience, consistently across cohorts.",
+  "status": "Published resource",
+  "ev": [
+   [
+    "Experiential learning infrastructure design",
+    "https://www.andrearobin.com/experiential-learning-infrastructure-design"
+   ],
+   [
+    "Case study: equitable experiential learning at scale",
+    "https://www.andrearobin.com/facilitating-equitable-experiential-learning-at-scale"
+   ]
+  ]
+ },
+ {
+  "id": "c6",
+  "num": "6",
+  "label": "Facilitate and\nbuild capability",
+  "name": "Facilitate and build capability",
+  "cluster": "design",
+  "desc": "Design and facilitate workshops and learning communities that build the capability of staff, faculty and partners.",
+  "status": "Published resource",
+  "ev": [
+   [
+    "Learning community design and facilitation",
+    "https://www.andrearobin.com/learning-community-design-and-facilitation"
+   ]
+  ]
+ },
+ {
+  "id": "c7",
+  "num": "7",
+  "label": "Design for\nlearner\nvariability",
+  "name": "Design for learner variability",
+  "cluster": "access",
+  "desc": "Apply Universal Design for Learning: fix the goal, identify barriers, and build flexibility into the design.",
+  "status": "Published resource",
+  "ev": [
+   [
+    "Designing for learner variability at scale",
+    "https://www.andrearobin.com/designing-for-learner-variability-at-scale"
+   ],
+   [
+    "Universal Design for Learning resources",
+    "https://www.andrearobin.com/universal-design-for-learning-udl"
+   ]
+  ]
+ },
+ {
+  "id": "c8",
+  "num": "8",
+  "label": "Hold design and\naccommodation\ntogether",
+  "name": "Hold design and accommodation together",
+  "cluster": "access",
+  "desc": "Treat inclusive design and individual accommodation as complementary practices, within the duty to accommodate.",
+  "status": "Published resource",
+  "ev": [
+   [
+    "From accommodation to proactive inclusive design",
+    "https://www.andrearobin.com/from-accommodation-to-proactive-inclusive-design"
+   ],
+   [
+    "Accessibility resources",
+    "https://www.andrearobin.com/accessibility"
+   ]
+  ]
+ },
+ {
+  "id": "c9",
+  "num": "9",
+  "label": "Remove barriers\nfrom assessment",
+  "name": "Remove barriers from assessment",
+  "cluster": "access",
+  "desc": "Separate what an assessment measures from barriers unrelated to it, so results reflect capability.",
+  "status": "Published resource",
+  "ev": [
+   [
+    "Eliminating construct-irrelevant barriers in assessment",
+    "https://www.andrearobin.com/eliminating-construct-irrelevant-barriers-in-assessment"
+   ]
+  ]
+ },
+ {
+  "id": "c10",
+  "num": "10",
+  "label": "Produce\naccessible\nmaterials and\nmedia",
+  "name": "Produce accessible materials and media",
+  "cluster": "access",
+  "desc": "Produce course materials and instructional media to WCAG 2.2 AA, tested with keyboard and screen reader.",
+  "status": "Practised · resource in development",
+  "ev": [
+   [
+    "Screen-reader version of the accessibility map",
+    "https://accessiblelearninglabs.github.io/learning-design-specialization/area-map-access-linear.html"
+   ],
+   [
+    "Accessibility resources",
+    "https://www.andrearobin.com/accessibility"
+   ]
+  ]
+ },
+ {
+  "id": "c11",
+  "num": "11",
+  "label": "Support\nIndigenous-led\nand antiracist\ndesign",
+  "name": "Support Indigenous-led and antiracist design",
+  "cluster": "access",
+  "desc": "Contribute design craft to Indigenous-led education under Indigenous direction, and design against racism in content, assessment and participation.",
+  "status": "Practised · resource not yet written",
+  "ev": []
+ },
+ {
+  "id": "c12",
+  "num": "12",
+  "label": "Move evidence\ninto practice",
+  "name": "Move evidence into practice",
+  "cluster": "systems",
+  "desc": "Design systems that carry research into practice, and use learning to support organizational change.",
+  "status": "Published resource",
+  "ev": [
+   [
+    "Research-to-practice learning systems",
+    "https://www.andrearobin.com/research-to-practice-learning-systems"
+   ],
+   [
+    "Change management through learning design",
+    "https://www.andrearobin.com/change-management-through-learning-design"
+   ],
+   [
+    "Case study: a province-wide transition to care-based service",
+    "https://www.andrearobin.com/supporting-a-province-wide-transition-to-care-based-service"
+   ]
+  ]
+ },
+ {
+  "id": "c13",
+  "num": "13",
+  "label": "Coordinate\nprograms and\npartners",
+  "name": "Coordinate programs and partners",
+  "cluster": "systems",
+  "desc": "Plan and coordinate programs across stakeholders, with systems that continue after handover.",
+  "status": "Published resource",
+  "ev": [
+   [
+    "Case study: equitable experiential learning at scale",
+    "https://www.andrearobin.com/facilitating-equitable-experiential-learning-at-scale"
+   ],
+   [
+    "Organizational learning design",
+    "https://www.andrearobin.com/organizational-learning-design"
+   ]
+  ]
+ },
+ {
+  "id": "c14",
+  "num": "14",
+  "label": "Build course\nsites and live\ndelivery",
+  "name": "Build course sites and live delivery",
+  "cluster": "systems",
+  "desc": "Structure course sites for clear navigation and instructions, build templates, and support live sessions with recording and captioning.",
+  "status": "Practised · resource not yet written",
+  "ev": []
+ },
+ {
+  "id": "c15",
+  "num": "15",
+  "label": "Evaluate, refine\nand report",
+  "name": "Evaluate, refine and report",
+  "cluster": "systems",
+  "desc": "Evaluate whether learning achieved its outcomes and for which learners, and refine courses using analytics and student feedback.",
+  "status": "Published resource",
+  "ev": [
+   [
+    "Learning evaluation framework design",
+    "https://www.andrearobin.com/learning-evaluation-framework-design"
+   ],
+   [
+    "Case study: a learning evaluation framework for a national research institution",
+    "https://www.andrearobin.com/building-a-learning-evaluation-framework-for-a-national-research-institution"
+   ]
+  ]
+ },
+ {
+  "id": "c16",
+  "num": "16",
+  "label": "Lead research\nand funded\nprojects",
+  "name": "Lead research and funded projects",
+  "cluster": "systems",
+  "desc": "Plan educational research and funded teaching projects, including ethics review and funding proposals.",
+  "status": "Practised · resource not yet written",
+  "ev": []
+ }
+];
+
+const edges = [
+ {
+  "source": "c1",
+  "target": "c12",
+  "strength": "normal"
+ },
+ {
+  "source": "c1",
+  "target": "c13",
+  "strength": "strong"
+ },
+ {
+  "source": "c1",
+  "target": "c2",
+  "strength": "strong"
+ },
+ {
+  "source": "c2",
+  "target": "c6",
+  "strength": "normal"
+ },
+ {
+  "source": "c13",
+  "target": "c2",
+  "strength": "normal"
+ },
+ {
+  "source": "c1",
+  "target": "c3",
+  "strength": "normal"
+ },
+ {
+  "source": "c3",
+  "target": "c4",
+  "strength": "strong"
+ },
+ {
+  "source": "c3",
+  "target": "c5",
+  "strength": "normal"
+ },
+ {
+  "source": "c3",
+  "target": "c9",
+  "strength": "strong"
+ },
+ {
+  "source": "c4",
+  "target": "c9",
+  "strength": "normal"
+ },
+ {
+  "source": "c5",
+  "target": "c6",
+  "strength": "normal"
+ },
+ {
+  "source": "c7",
+  "target": "c8",
+  "strength": "normal"
+ },
+ {
+  "source": "c7",
+  "target": "c9",
+  "strength": "strong"
+ },
+ {
+  "source": "c8",
+  "target": "c9",
+  "strength": "strong"
+ },
+ {
+  "source": "c10",
+  "target": "c14",
+  "strength": "strong"
+ },
+ {
+  "source": "c12",
+  "target": "c13",
+  "strength": "normal"
+ },
+ {
+  "source": "c12",
+  "target": "c15",
+  "strength": "normal"
+ },
+ {
+  "source": "c13",
+  "target": "c14",
+  "strength": "normal"
+ },
+ {
+  "source": "c14",
+  "target": "c6",
+  "strength": "normal"
+ },
+ {
+  "source": "c13",
+  "target": "c15",
+  "strength": "normal"
+ },
+ {
+  "source": "c15",
+  "target": "c16",
+  "strength": "strong"
+ },
+ {
+  "source": "c1",
+  "target": "c16",
+  "strength": "normal"
+ },
+ {
+  "source": "c12",
+  "target": "c16",
+  "strength": "normal"
+ },
+ {
+  "source": "c11",
+  "target": "c7",
+  "strength": "normal"
+ }
+];
+
+const clusterColors = {"design": "#25587f", "access": "#347cb1", "systems": "#617993"};
+const clusterNames = {"design": "Learning Design", "access": "Access and Equity", "systems": "Systems and Evidence"};
+const clusterFocus = {"design": "Learning Design \u00b7 built with the people it serves", "access": "Access and Equity \u00b7 the barrier is in the design", "systems": "Systems and Evidence \u00b7 carried into practice and measured"};
+const NS = 'http://www.w3.org/2000/svg';
+const byId = Object.fromEntries(nodes.map(n => [n.id, n]));
+const neighbours = id => {
+  const s = new Set();
+  edges.forEach(e => { if (e.source === id) s.add(e.target); if (e.target === id) s.add(e.source); });
+  return [...s].sort((a, b) => +byId[a].num - +byId[b].num);
+};
+const flat = s => s.replace(/\n/g, ' ');
+let W, H, activeNode = null, narrow = false, nodeEls = {}, edgeEls = [], sim = null;
+// circle size follows the number of relationships, as in the Fieldwork map
+const rad = n => (20 + Math.min(neighbours(n.id).length * 1.2, 8)) * (narrow ? 0.72 : 1);
+
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+
+/* Each group gathers around its own centre, as in the Fieldwork map. A final
+   pass keeps every circle and label clear of every other. */
+const box = n => {
+  const r = rad(n), w = Math.max(2 * r, n.lw) + 16, h = 2 * r + (n.lines ? 14 + n.lines * 14 : 10);
+  return { x0: n.x - w / 2, x1: n.x + w / 2, y0: n.y - r - 4, y1: n.y - r - 4 + h };
+};
+let obstacles = [], bounds = {};
+function separate(strength) {
+  let moved = false;
+  for (let i = 0; i < nodes.length; i++) for (let j = i + 1; j < nodes.length; j++) {
+    const a = nodes[i], b = nodes[j], A = box(a), B = box(b);
+    const ox = Math.min(A.x1, B.x1) - Math.max(A.x0, B.x0), oy = Math.min(A.y1, B.y1) - Math.max(A.y0, B.y0);
+    if (ox <= 0 || oy <= 0) continue;
+    moved = true;
+    if (ox < oy) { const s = (a.x <= b.x ? -1 : 1) * (ox / 2 + 0.5) * strength; a.x += s; b.x -= s; }
+    else { const s = (a.y <= b.y ? -1 : 1) * (oy / 2 + 0.5) * strength; a.y += s; b.y -= s; }
+  }
+  nodes.forEach(n => {
+    obstacles.forEach(o => {
+      const A = box(n), ox = Math.min(A.x1, o.x1) - Math.max(A.x0, o.x0), oy = Math.min(A.y1, o.y1) - Math.max(A.y0, o.y0);
+      if (ox > 0 && oy > 0) { moved = true; if (ox < oy) n.x += (n.x < (o.x0 + o.x1) / 2 ? -ox : ox); else n.y += (n.y < (o.y0 + o.y1) / 2 ? -oy : oy); }
+    });
+    const A = box(n);
+    if (A.x0 < bounds.x0) n.x += bounds.x0 - A.x0;
+    if (A.x1 > bounds.x1) n.x -= A.x1 - bounds.x1;
+    if (A.y0 < bounds.y0) n.y += bounds.y0 - A.y0;
+    if (A.y1 > bounds.y1) n.y -= A.y1 - bounds.y1;
+  });
+  return moved;
+}
+
+function init() {
+  const wrap = document.getElementById('canvas-wrap');
+  W = wrap.clientWidth;
+  narrow = W <= 640;
+  H = narrow ? Math.round(W * 1.1) : wrap.clientHeight;
+  const svg = document.getElementById('svg');
+  svg.innerHTML = '';
+  svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  svg.style.height = narrow ? H + 'px' : '';
+  if (sim) sim.stop();
+
+  const probe = el('g', { 'aria-hidden': 'true', opacity: 0 }, svg);
+  nodes.forEach(n => {
+    const lines = n.label.split('\n');
+    n.lines = narrow ? 0 : lines.length; n.lw = 0;
+    if (!narrow) lines.forEach(t => { const x = el('text', { class: 'node-label' }, probe); x.textContent = t; n.lw = Math.max(n.lw, x.getBBox().width); });
+  });
+  probe.remove();
+
+  const wr = wrap.getBoundingClientRect();
+  obstacles = narrow ? [] : ['title-block', 'legend', 'hint'].map(id => {
+    const r = document.getElementById(id).getBoundingClientRect();
+    return { x0: r.left - wr.left - 12, x1: r.right - wr.left + 12, y0: r.top - wr.top - 12, y1: r.bottom - wr.top + 12 };
+  });
+  bounds = narrow ? { x0: 8, x1: W - 8, y0: 8, y1: H - 8 } : { x0: 24, x1: W - 24, y0: 24, y1: H - 24 };
+
+  const centres = {
+    design:  { x: W * 0.28, y: H * 0.38 },
+    access:  { x: W * 0.72, y: H * 0.38 },
+    systems: { x: W * 0.50, y: H * 0.72 },
+  };
+  const rand = d3.randomLcg(42);
+  nodes.forEach(n => { n.x = centres[n.cluster].x + (rand() - 0.5) * 120; n.y = centres[n.cluster].y + (rand() - 0.5) * 120; n.vx = n.vy = 0; });
+  const links = edges.map(e => ({ source: e.source, target: e.target, strength: e.strength }));
+  const k = narrow ? 0.55 : 1;
+  sim = d3.forceSimulation(nodes).randomSource(rand)
+    .force('link', d3.forceLink(links).id(d => d.id)
+      .distance(d => (d.strength === 'strong' ? 115 : 175) * k)
+      .strength(d => d.strength === 'strong' ? 0.7 : 0.2))
+    .force('charge', d3.forceManyBody().strength(-320 * k))
+    .force('cluster', alpha => nodes.forEach(n => { const c = centres[n.cluster]; n.vx += (c.x - n.x) * 0.22 * alpha; n.vy += (c.y - n.y) * 0.22 * alpha; }))
+    .force('collision', d3.forceCollide().radius(d => rad(d) + (narrow ? 10 : 36)))
+    .force('x', d3.forceX(W / 2).strength(0.04))
+    .force('y', d3.forceY(H / 2).strength(0.04))
+    .stop();
+  for (let i = 0; i < 400; i++) { sim.tick(); separate(0.5); }
+  for (let i = 0; i < 400 && separate(1); i++);
+
+  const ge = el('g', { class: 'edges', 'aria-hidden': 'true' }, svg);
+  edgeEls = edges.map(e => {
+    const line = el('line', { class: 'edge' + (e.strength === 'strong' ? ' strong' : '') }, ge);
+    line._e = e; return line;
+  });
+  const gn = el('g', { class: 'nodes' }, svg);
+  nodeEls = {};
+  nodes.forEach(n => {
+    const g = el('g', {
+      class: 'node-group', tabindex: 0, role: 'button', 'aria-pressed': 'false',
+      'aria-label': `${n.num}. ${n.name}. ${clusterNames[n.cluster]}. ${n.status}.`
+    }, gn);
+    const r = rad(n);
+    el('circle', { class: 'node-ring', r: r + 4 }, g);
+    el('circle', { class: 'node-circle', r, fill: clusterColors[n.cluster], opacity: 0.92 }, g);
+    const num = el('text', { class: 'node-num', dy: '0.05em', 'aria-hidden': 'true' }, g); num.textContent = n.num;
+    const tg = el('g', { 'aria-hidden': 'true' }, g);
+    n.label.split('\n').forEach((t, i) => {
+      const x = el('text', { class: 'node-label', 'text-anchor': 'middle', x: 0, y: r + 14 + i * 14 }, tg); x.textContent = t;
+    });
+    g.addEventListener('mouseenter', ev => { if (activeNode || dragging) return; highlight(n); showTooltip(n, ev); });
+    g.addEventListener('mouseleave', () => { if (activeNode || dragging) return; resetHighlight(); hideTooltip(); });
+    g.addEventListener('click', ev => { ev.stopPropagation(); if (dragMoved) return; toggle(n, ev, false); });
+    g.addEventListener('keydown', ev => {
+      if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); toggle(n, null, true); }
+      if (ev.key === 'Escape') { ev.preventDefault(); clearActive(true); }
+    });
+    nodeEls[n.id] = g;
+  });
+  render();
+
+  // drag to rearrange, as in the Fieldwork map; labels stay clear while moving
+  let dragging = false, dragMoved = false;
+  window.dragging = false;
+  d3.selectAll('.node-group').data(nodes).call(d3.drag()
+    .on('start', (ev, d) => { dragging = true; dragMoved = false; hideTooltip(); })
+    .on('drag', (ev, d) => { dragMoved = true; d.x = ev.x; d.y = ev.y; for (let i = 0; i < 6; i++) separate(0.6); d.x = ev.x; d.y = ev.y; render(); })
+    .on('end', () => { for (let i = 0; i < 200 && separate(1); i++); render(); dragging = false; setTimeout(() => { dragMoved = false; }, 0); }));
+
+  svg.onclick = () => { if (activeNode) clearActive(false); };
+
+  const key = document.getElementById('key');
+  key.innerHTML = '';
+  nodes.forEach(n => {
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="k-num">${n.num}</span>`;
+    const b = document.createElement('button'); b.type = 'button'; b.textContent = n.name;
+    b.addEventListener('click', () => toggle(n, null, true));
+    li.appendChild(b); key.appendChild(li);
+  });
+
+  if (activeNode) { const n = byId[activeNode]; activeNode = null; toggle(n, null, false); }
+}
+
+function render() {
+  edgeEls.forEach(l => {
+    const a = byId[l._e.source], b = byId[l._e.target];
+    l.setAttribute('x1', a.x); l.setAttribute('y1', a.y); l.setAttribute('x2', b.x); l.setAttribute('y2', b.y);
+  });
+  nodes.forEach(n => nodeEls[n.id].setAttribute('transform', `translate(${n.x},${n.y})`));
+}
+
+function highlight(d) {
+  const near = new Set(neighbours(d.id));
+  nodes.forEach(n => nodeEls[n.id].classList.toggle('dimmed', n.id !== d.id && !near.has(n.id)));
+  edgeEls.forEach(l => {
+    const on = l._e.source === d.id || l._e.target === d.id;
+    l.classList.toggle('highlighted', on); l.classList.toggle('dimmed', !on);
+  });
+}
+function resetHighlight() {
+  nodes.forEach(n => { nodeEls[n.id].classList.remove('dimmed', 'active'); nodeEls[n.id].setAttribute('aria-pressed', 'false'); });
+  edgeEls.forEach(l => l.classList.remove('highlighted', 'dimmed'));
+}
+
+const tt = document.getElementById('tooltip');
+function showTooltip(d, ev, pinned) {
+  tt.querySelector('.tt-cluster').textContent = clusterFocus[d.cluster];
+  tt.querySelector('.tt-title').textContent = d.num + '. ' + d.name;
+  tt.querySelector('.tt-desc').textContent = d.desc;
+  tt.querySelector('.tt-meta').textContent = d.status;
+  const ev_ = tt.querySelector('.tt-ev');
+  ev_.innerHTML = '';
+  if (pinned) {
+    if (d.ev.length) d.ev.forEach(x => {
+      const li = document.createElement('li'), a = document.createElement('a');
+      a.href = x[1]; a.target = '_top'; a.textContent = x[0]; li.appendChild(a); ev_.appendChild(li);
+    });
+    else { const li = document.createElement('li'); li.textContent = 'No public resource yet.'; ev_.appendChild(li); }
+  }
+  ev_.style.display = pinned ? '' : 'none';
+  const con = neighbours(d.id).map(id => flat(byId[id].label));
+  tt.querySelector('.tt-links').textContent = con.length ? 'Connected to: ' + con.join(', ') : '';
+  position(d, ev);
+  tt.classList.add('visible');
+  tt.classList.toggle('pinned', !!pinned);
+  tt.setAttribute('aria-hidden', pinned ? 'false' : 'true');
+}
+function position(d, ev) {
+  const rect = document.getElementById('canvas-wrap').getBoundingClientRect();
+  const svgRect = document.getElementById('svg').getBoundingClientRect();
+  let x = ev && ev.clientX ? ev.clientX - rect.left : (svgRect.left - rect.left) + d.x;
+  let y = ev && ev.clientY ? ev.clientY - rect.top : (svgRect.top - rect.top) + d.y;
+  const ttW = Math.min(284, rect.width - 24), ttH = tt.offsetHeight || 220;
+  const left = x + 18 + ttW > rect.width ? Math.max(12, x - ttW - 18) : x + 18;
+  const top = Math.max(12, Math.min(y - 10, (narrow ? svgRect.height : rect.height) - ttH - 12));
+  tt.style.left = left + 'px'; tt.style.top = top + 'px';
+}
+function hideTooltip() { tt.classList.remove('visible', 'pinned'); tt.setAttribute('aria-hidden', 'true'); }
+
+function toggle(d, ev, fromKeyboard) {
+  if (activeNode === d.id) { clearActive(fromKeyboard); return; }
+  activeNode = d.id;
+  resetHighlight(); highlight(d);
+  nodeEls[d.id].classList.add('active'); nodeEls[d.id].setAttribute('aria-pressed', 'true');
+  showTooltip(d, ev, true);
+  document.getElementById('announce').textContent = 'Showing ' + d.num + ', ' + d.name + '.';
+  if (fromKeyboard) tt.querySelector('.tt-title').focus();
+}
+function clearActive(returnFocus) {
+  const was = activeNode; activeNode = null;
+  resetHighlight(); hideTooltip();
+  if (returnFocus && was) nodeEls[was].focus();
+}
+tt.addEventListener('keydown', ev => { if (ev.key === 'Escape') { ev.preventDefault(); clearActive(true); } });
+tt.addEventListener('click', ev => ev.stopPropagation());
+
+init();
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(init);
+let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(init, 150); });
+</script>
+</body>
+</html>
