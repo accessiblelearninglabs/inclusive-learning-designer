@@ -197,7 +197,7 @@ const nodes = [
   "label": "Align outcomes,\nassessment and\ncurriculum",
   "name": "Align outcomes, assessment and curriculum",
   "cluster": "design",
-  "desc": "Align outcomes, assessment and activities across a course or program, so each part supports what learners are working toward.",
+  "desc": "Align outcomes, assessment and activities across a course or program through competency-based design, so each part supports what learners are working toward.",
   "status": "Published resource",
   "ev": [
    [
@@ -230,7 +230,7 @@ const nodes = [
   "label": "Design the\nlearning\nexperience",
   "name": "Design the learning experience",
   "cluster": "design",
-  "desc": "Design preparation, practice and reflection so adults learn through experience, consistently across cohorts.",
+  "desc": "Co-design preparation, scenario-based practice and reflection with learners and communities, so adults learn through experience and carry it into practice.",
   "status": "Published resource",
   "ev": [
    [
@@ -249,7 +249,7 @@ const nodes = [
   "label": "Facilitate\nshared learning",
   "name": "Facilitate shared learning",
   "cluster": "design",
-  "desc": "Design and facilitate workshops and learning communities where participants learn from one another.",
+  "desc": "Design and facilitate workshops, learning communities and Training of Trainers, in person and online, where participants learn from one another.",
   "status": "Published resource",
   "ev": [
    [
@@ -264,7 +264,7 @@ const nodes = [
   "label": "Design for\nlearner\nvariability",
   "name": "Design for learner variability",
   "cluster": "access",
-  "desc": "Apply Universal Design for Learning: hold the goal steady, identify where the design creates barriers, and build in flexibility.",
+  "desc": "Apply Universal Design for Learning across ability, skill level and connectivity: hold the goal steady, identify where the design creates barriers, and build in flexibility.",
   "status": "Published resource",
   "ev": [
    [
@@ -314,10 +314,10 @@ const nodes = [
  {
   "id": "c10",
   "num": "10",
-  "label": "Produce\naccessible\nmaterials and\nmedia",
-  "name": "Produce accessible materials and media",
+  "label": "Develop\naccessible\ne-learning and\nmedia",
+  "name": "Develop accessible e-learning and media",
   "cluster": "access",
-  "desc": "Produce course materials and instructional media to WCAG 2.2 AA, tested with keyboard and screen reader.",
+  "desc": "Storyboard and build e-courses, interactive activities and media in authoring tools, to WCAG 2.2 AA and tested with keyboard and screen reader.",
   "status": "Practised · resource in development",
   "ev": [
    [
@@ -346,7 +346,7 @@ const nodes = [
   "label": "Move evidence\ninto practice",
   "name": "Move evidence into practice",
   "cluster": "systems",
-  "desc": "Design the systems that carry research into practice, and use learning to support organizational change.",
+  "desc": "Design the systems that carry research and guidance into practice, with policy and public-sector partners, and use learning to support organizational change.",
   "status": "Published resource",
   "ev": [
    [
@@ -369,7 +369,7 @@ const nodes = [
   "label": "Coordinate\nprograms and\npartners",
   "name": "Coordinate programs and partners",
   "cluster": "systems",
-  "desc": "Plan and coordinate programs across partners, with systems that continue after handover.",
+  "desc": "Plan and coordinate programs across partners and vendors in agile cycles, from terms of reference and budgets to quality review, version control and learner communications.",
   "status": "Published resource",
   "ev": [
    [
@@ -385,10 +385,10 @@ const nodes = [
  {
   "id": "c14",
   "num": "14",
-  "label": "Build course\nsites and live\ndelivery",
-  "name": "Build course sites and live delivery",
+  "label": "Run learning\nplatforms and\nlive delivery",
+  "name": "Run learning platforms and live delivery",
   "cluster": "systems",
-  "desc": "Structure course sites for clear navigation and instructions, build templates, and support live sessions with recording and captioning.",
+  "desc": "Administer learning platforms, from course sites and catalogues to enrolments, completion tracking and reporting, and support live sessions with recording and captioning.",
   "status": "Practised · resource not yet written",
   "ev": []
  },
@@ -398,7 +398,7 @@ const nodes = [
   "label": "Evaluate, refine\nand report",
   "name": "Evaluate, refine and report",
   "cluster": "systems",
-  "desc": "Evaluate whether learning achieved its intended outcomes, and for which learners, and refine it using learner feedback and analytics.",
+  "desc": "Evaluate whether learning achieved its outcomes and transferred to practice, and for which learners, and refine it using learner feedback and analytics.",
   "status": "Published resource",
   "ev": [
    [
@@ -417,7 +417,7 @@ const nodes = [
   "label": "Contribute to\nresearch and\nfunded projects",
   "name": "Contribute to research and funded projects",
   "cluster": "systems",
-  "desc": "Contribute to educational research and funded teaching projects, including ethics review and funding proposals.",
+  "desc": "Contribute to educational research and funded teaching projects, including ethics review, funding proposals and resource mobilisation.",
   "status": "Practised · resource not yet written",
   "ev": []
  }
@@ -426,18 +426,23 @@ const nodes = [
 const edges = [
  {
   "source": "c1",
+  "target": "c5",
+  "strength": "normal"
+ },
+ {
+  "source": "c1",
   "target": "c12",
   "strength": "normal"
  },
  {
   "source": "c1",
   "target": "c13",
-  "strength": "strong"
+  "strength": "normal"
  },
  {
   "source": "c1",
   "target": "c2",
-  "strength": "strong"
+  "strength": "normal"
  },
  {
   "source": "c2",
@@ -461,13 +466,13 @@ const edges = [
  },
  {
   "source": "c3",
-  "target": "c5",
-  "strength": "normal"
- },
- {
-  "source": "c3",
   "target": "c9",
   "strength": "strong"
+ },
+ {
+  "source": "c13",
+  "target": "c3",
+  "strength": "normal"
  },
  {
   "source": "c4",
@@ -477,17 +482,27 @@ const edges = [
  {
   "source": "c5",
   "target": "c6",
+  "strength": "strong"
+ },
+ {
+  "source": "c12",
+  "target": "c6",
   "strength": "normal"
  },
  {
   "source": "c7",
   "target": "c8",
-  "strength": "normal"
+  "strength": "strong"
  },
  {
   "source": "c7",
   "target": "c9",
   "strength": "strong"
+ },
+ {
+  "source": "c10",
+  "target": "c7",
+  "strength": "normal"
  },
  {
   "source": "c8",
@@ -496,13 +511,23 @@ const edges = [
  },
  {
   "source": "c10",
+  "target": "c13",
+  "strength": "normal"
+ },
+ {
+  "source": "c10",
   "target": "c14",
   "strength": "strong"
  },
  {
+  "source": "c11",
+  "target": "c7",
+  "strength": "normal"
+ },
+ {
   "source": "c12",
   "target": "c13",
-  "strength": "normal"
+  "strength": "strong"
  },
  {
   "source": "c12",
@@ -512,15 +537,25 @@ const edges = [
  {
   "source": "c13",
   "target": "c14",
-  "strength": "normal"
+  "strength": "strong"
  },
  {
   "source": "c14",
-  "target": "c6",
+  "target": "c16",
+  "strength": "normal"
+ },
+ {
+  "source": "c15",
+  "target": "c7",
   "strength": "normal"
  },
  {
   "source": "c13",
+  "target": "c15",
+  "strength": "normal"
+ },
+ {
+  "source": "c14",
   "target": "c15",
   "strength": "normal"
  },
@@ -537,11 +572,6 @@ const edges = [
  {
   "source": "c12",
   "target": "c16",
-  "strength": "normal"
- },
- {
-  "source": "c11",
-  "target": "c7",
   "strength": "normal"
  }
 ];
